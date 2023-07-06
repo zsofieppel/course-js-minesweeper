@@ -22,8 +22,33 @@ const images = {
 
 let map = createMap();
 placeMines(map, mineCount);
-
 drawMap();
+
+function calculateFieldValues(map) {
+    for (let rowI = 0; rowI < rows; rowI++) {
+        for (let colI = 0; colI < columns; colI++) {
+            let field = map[rowI][colI];
+            if (field !== mine) {
+            let neighbourCoordinates = findNeighbourFields(map, rowI, colI);
+            }
+        }
+    }
+}
+
+function findNeighbourFields(map, rowI, colI) {
+    let neighbourCoordinates = [];
+    for (let row = rowI - 1; row <= rowI + 1; row++) {
+        for (let col = colI - 1; col <= colI + 1; col++) {
+            if (row >= 0 && row < rows && col >= 0 && col < columns) {
+                if (row !== rowI || col !== colI) {
+                    neighbourCoordinates.push([row, col]);
+                }
+            }
+        }
+    }
+    return neighbourCoordinates;
+}
+
 
 function placeMines(map, mineCount) {
     let mines = 0;
