@@ -54,14 +54,7 @@ canvas.addEventListener('click', function(event) {
   }
   exploreField(row, col);
   drawMap();
-  if (map[row][col] === mine && exploredMap[row][col]) {
-    looseGame();
-    stopTimer();
-  } else if (exploredFields === rows * columns - mineCount) {
-    isGameOver = true;
-    actionButton.src = buttons.won;
-    stopTimer();
-  }
+  checkGameEnd(row, col);
 });
 
 canvas.addEventListener('contextmenu', function(event) {
@@ -70,11 +63,24 @@ canvas.addEventListener('contextmenu', function(event) {
   const y = event.offsetY;
   const col = Math.floor(x / size);
   const row = Math.floor(y / size);
-  if (exploredMap[row][col]) return;
-  flagMap[row][col] = !flagMap[row][col];
-  remainingMines += flagMap[row][col] ? -1 : 1;
+  if (exploredMap[row][col]) {
+    const neighbourCoordinates = findNeighbourFields(map, row, col);
+    let flaggedNeighbours = countFlaggedNeighbours(neighbourCoordinates);
+    if (flaggedNeighbours === map[row][col]) {
+      for (let i = 0; i < neighbourCoordinates.length; i++) {
+        let coordinate = neighbourCoordinates[i]; // {row: 7, col: 1
+        exploreField(coordinate.row, coordinate.col); // rekurzió
+      }
+    }
+  } else {
+    flagMap[row][col] = !flagMap[row][col];
+    remainingMines += flagMap[row][col] ? -1 : 1; // ternary operator
+    mineCounter.innerText = convertNumberTo3DigitString(remainingMines);
+  }
   drawMap();
-  mineCounter.innerText = convertNumberTo3DigitString(remainingMines);
+  if (isGameOver) {
+    showWrongFlags();
+  }
 });
 
 actionButton.addEventListener('click', function() {
@@ -83,16 +89,27 @@ actionButton.addEventListener('click', function() {
   timeCounter.innerText = convertNumberTo3DigitString(0);
 });
 
+function checkGameEnd(row, col) {
+  if (map[row][col] === mine && exploredMap[row][col]) {
+    looseGame();
+    stopTimer();
+  } else if (exploredFields === rows * columns - mineCount) {
+    isGameOver = true;
+    actionButton.src = buttons.won;
+    stopTimer();
+  }
+}
+
 function startTimer() {
-    let seconds = 0;
-    timer = setInterval(function() {
-        seconds = Mat.min(seconds + 1, 999)
-        timeCounter.innerText = convertNumberTo3DigitString(seconds);
-    }, 1000);
+  let seconds = 0;
+  timer = setInterval(function() {
+    seconds = Math.min(seconds + 1, 999);
+    timeCounter.innerText = convertNumberTo3DigitString(seconds);
+  }, 1000);
 }
 
 function stopTimer() {
-    clearInterval(timer);
+  clearInterval(timer);
 }
 
 function initGame() {
@@ -109,21 +126,26 @@ function initGame() {
 }
 
 function looseGame() {
-    isGameOver = true;
-    actionButton.src = buttons.lost;
-    for (let rowI = 0; rowI < rows; rowI++) {
-        for (let colI = 0; colI < columns; colI++) {
-            if (flagMap[rowI][colI] && map[rowI][colI] !== mine) {
-                drawImage(images.flaggedWrong, colI * size, rowI * size);
-            }
-        }
+  isGameOver = true;
+  actionButton.src = buttons.lost;
+  showWrongFlags();
+}
+
+function showWrongFlags() {
+  for (let rowI = 0; rowI < rows; rowI++) {
+    for (let colI = 0; colI < columns; colI++) {
+      if (flagMap[rowI][colI] && map[rowI][colI] !== mine) {
+        drawImage(images.flaggedWrong, colI * size, rowI * size);
+      }
     }
+  }
 }
 
 function exploreField(row, col) {
   if (!exploredMap[row][col] && !flagMap[row][col]) {
     exploredFields++;
     exploredMap[row][col] = true;
+    checkGameEnd(row, col);
     if (map[row][col] === 0) {
       let neighbourCoordinates = findNeighbourFields(map, row, col);
       for (let i = 0; i < neighbourCoordinates.length; i++) {
@@ -157,6 +179,17 @@ function countMines(map, coordinates) {
     }
   }
   return mineCount;
+}
+
+function countFlaggedNeighbours(coordinates) {
+  let flaggedNeighbours = 0;
+  for (let i = 0; i < coordinates.length; i++) {
+    let coordinate = coordinates[i]; // {row: 7, col: 1}
+    if (flagMap[coordinate.row][coordinate.col]) {
+      flaggedNeighbours++;
+    }
+  }
+  return flaggedNeighbours;
 }
 
 function findNeighbourFields(map, rowI, colI) {
@@ -232,13 +265,13 @@ function drawImage(image, x, y) {
 }
 
 function convertNumberTo3DigitString(number) {
-    if (number < 0) {
-        return '🤡';
-    } else if (number < 10) {
-        return '00' + number;
-    } else if (number < 100) {
-        return '0' + number;
-    } else {
-        return '' + number;
+  if (number < 0) {
+    return '🤡';
+  } else if (number < 10) {
+    return '00' + number;
+  } else if (number < 100) {
+    return '0' + number;
+  } else {
+    return number;
   }
 }
