@@ -2,12 +2,13 @@ const canvas = document.getElementById('myCanvas');
 const c = canvas.getContext('2d');
 const actionButton = document.getElementById('action-button');
 const mineCounter = document.getElementById('mine-count');
+const timeCounter = document.getElementById('time');
 
 const size = 50;
 const columns = canvas.width / size;
 const rows = canvas.height / size;
 const mine = 'mine';
-const mineCount = 10;
+const mineCount = 30;
 const images = {
   'hidden': document.getElementById('hidden'),
   'mine': document.getElementById('exploded-mine'),
@@ -35,6 +36,7 @@ let flagMap;
 let map;
 let exploredMap;
 let remainingMines;
+let timer;
 
 initGame();
 
@@ -48,14 +50,17 @@ canvas.addEventListener('click', function(event) {
     placeMines(map, mineCount, row, col);
     calculateFieldValues(map);
     isFirstClick = false;
+    startTimer();
   }
   exploreField(row, col);
   drawMap();
-  if (map[row][col] === mine) {
-   looseGame();
+  if (map[row][col] === mine && exploredMap[row][col]) {
+    looseGame();
+    stopTimer();
   } else if (exploredFields === rows * columns - mineCount) {
     isGameOver = true;
     actionButton.src = buttons.won;
+    stopTimer();
   }
 });
 
@@ -74,7 +79,21 @@ canvas.addEventListener('contextmenu', function(event) {
 
 actionButton.addEventListener('click', function() {
   initGame();
+  stopTimer();
+  timeCounter.innerText = convertNumberTo3DigitString(0);
 });
+
+function startTimer() {
+    let seconds = 0;
+    timer = setInterval(function() {
+        seconds = Mat.min(seconds + 1, 999)
+        timeCounter.innerText = convertNumberTo3DigitString(seconds);
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timer);
+}
 
 function initGame() {
   isGameOver = false;
@@ -102,7 +121,7 @@ function looseGame() {
 }
 
 function exploreField(row, col) {
-  if (exploredMap[row][col] === false) {
+  if (!exploredMap[row][col] && !flagMap[row][col]) {
     exploredFields++;
     exploredMap[row][col] = true;
     if (map[row][col] === 0) {
